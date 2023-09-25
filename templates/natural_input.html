@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Natural Language Input</title>
+</head>
+<body>
+    <h1>Enter Your Grocery Status in Natural Language</h1>
+    <form action="/process_natural_input" method="post">
+        <label for="user_input">Your Input:</label>
+        <input type="text" id="user_input" name="user_input"><br><br>
+        <input type="submit" value="Submit">
+    </form>
+
+    {% if session['chatgpt_response'] %}
+    <div class="response-box">
+        <h3>ChatGPT's Response:</h3>
+        <p>{{ session['chatgpt_response'] }}</p>
+    </div>
+    {% endif %}
+</body>
+</html>
