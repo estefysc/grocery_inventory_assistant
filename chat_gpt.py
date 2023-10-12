@@ -1,6 +1,7 @@
 from flask import session
 import openai
 import os
+import re
 
 # Initialize OpenAI API key from environment variables
 api_key = os.environ.get("OPENAI_API_KEY")
@@ -9,59 +10,93 @@ api_key = os.environ.get("OPENAI_API_KEY")
 openai.api_key = api_key
 
 def create_chat_completion(prompt, model="gpt-4", conversation_history=None, temperature=1, max_tokens=100):
-    # """
-    # Creates a chat completion using OpenAI's ChatGPT.
+    conversation_state = session.get('conversation_state')
+    messages = []
+    
+    if conversation_state:
+        context = conversation_state.get_context()
+        messages.append({"role": "system", "content": "You are a helpful assistant specialized in managing grocery inventories."})
+        messages.append({"role": "user", "content": context})
+        messages.append({"role": "assistant", "content": prompt})
+    
+    response = openai.ChatCompletion.create(
+        model=model,
+        messages=messages,
+        max_tokens=max_tokens,
+        n=1,
+        stop=None,
+        temperature=temperature
+    )
+    
+    generated_text = response['choices'][0]['message']['content'].strip()
+    return generated_text
 
-    # Parameters:
-    # - prompt (str): The prompt or question to ask the model.
-    # - model (str): The model to use for the chat completion. Default is "gpt-3.5-turbo".
-    # - conversation_history (list): A list of previous messages in the conversation.
-    # - temperature (float): Controls the randomness of the model's output.
-    # - max_tokens (int): The maximum number of tokens for the model to generate.
-
-    # Returns:
-    # - str: The model's response.
-    # """
-     
-    # Initialize the conversation history if it doesn't exist.
-    if conversation_history is None:
-        conversation_history = []
+def parse_user_intent(user_input):
+    """
+    Parse the user's natural language input to determine the intent and parameters.
+    
+    Args:
+        user_input (str): Natural language input from the user.
         
-    # Check if it's the user's first time and if the purchase frequency is already set in the session.
-    # THIS WILL BE CHANGED TO DB USE
-    first_time_user = session.get('first_time_user', True)
-    purchase_frequency = session.get('purchase_frequency', None)
+    Returns:
+        dict: A dictionary containing the parsed intent and parameters.
+    """
+    user_input = user_input.lower().strip()  # Normalize the input to lowercase and remove leading/trailing whitespaces
     
-    # If it's the user's first time, instruct ChatGPT to ask for the purchase frequency
-    if first_time_user:
-        session['first_time_user'] = False
-        conversation_history.append({"role": "system", "content": "You are my inventory assistant. Please ask the user how often they purchase groceries."})
-    
-    # Always offer the option to change purchase frequency
-    if purchase_frequency:
-        conversation_history.append({"role": "assistant", "content": f"Your current purchase frequency is set to {purchase_frequency}. Would you like to change it?"})
-    
-    # Add the user's message to the conversation history
-    conversation_history.append({"role": "user", "content": prompt})
-
-    # Create the API request payload
-    payload = {
-        "model": model,
-        "messages": conversation_history,
-        "temperature": temperature,
-        "max_tokens": max_tokens
+    # Initialize an empty dictionary to hold the parsed information
+    parsed_info = {
+        'intent': None,
+        'item': None,
+        'quantity': None
     }
+    
+    # Identify intent and extract parameters
+    if 'add' in user_input or 'create' in user_input:
+        parsed_info['intent'] = 'create'
+        parsed_info['item'] = re.search(r'add (.+?) to', user_input).group(1) if re.search(r'add (.+?) to', user_input) else None
+        parsed_info['quantity'] = re.search(r'\b(\d+)\b', user_input).group(1) if re.search(r'\b(\d+)\b', user_input) else None
+    elif 'remove' in user_input or 'delete' in user_input:
+        parsed_info['intent'] = 'delete'
+        parsed_info['item'] = re.search(r'remove (.+?) from', user_input).group(1) if re.search(r'remove (.+?) from', user_input) else None
+    elif 'update' in user_input or 'change' in user_input:
+        parsed_info['intent'] = 'update'
+        parsed_info['item'] = re.search(r'update (.+?) to', user_input).group(1) if re.search(r'update (.+?) to', user_input) else None
+        parsed_info['quantity'] = re.search(r'\b(\d+)\b', user_input).group(1) if re.search(r'\b(\d+)\b', user_input) else None
+    elif 'show' in user_input or 'list' in user_input:
+        parsed_info['intent'] = 'read'
+    
+    return parsed_info
 
-    # Make the API request
-    response = openai.ChatCompletion.create(**payload)
-
-    # Extract and return the model's message
-    model_message = response['choices'][0]['message']['content']
-
-    # Update the purchase frequency if the user chooses to set or change it
-    if "purchase frequency" in model_message.lower():
-        purchase_frequency = model_message.split(":")[-1].strip()
-        session['purchase_frequency'] = purchase_frequency
-
-    return model_message
+def parse_gpt_response(gpt_response):
+    # Initialize variables
+    action = 'none'
+    details = {}
+    
+    # Regular expressions for extracting item details
+    item_name_re = re.compile(r'item name: (\w+)', re.IGNORECASE)
+    item_quantity_re = re.compile(r'quantity: (\d+)', re.IGNORECASE)
+    item_date_re = re.compile(r'last purchased: (\d{4}-\d{2}-\d{2})', re.IGNORECASE)
+    
+    # Logic to parse GPT's response and decide the CRUD operation
+    if "add" in gpt_response.lower() or "create" in gpt_response.lower():
+        action = 'create'
+        details['name'] = item_name_re.search(gpt_response).group(1) if item_name_re.search(gpt_response) else None
+        details['quantity'] = int(item_quantity_re.search(gpt_response).group(1)) if item_quantity_re.search(gpt_response) else None
+        details['last_purchased'] = item_date_re.search(gpt_response).group(1) if item_date_re.search(gpt_response) else None
+        
+    elif "show" in gpt_response.lower() or "read" in gpt_response.lower():
+        action = 'read'
+        details['name'] = item_name_re.search(gpt_response).group(1) if item_name_re.search(gpt_response) else None
+        
+    elif "update" in gpt_response.lower():
+        action = 'update'
+        details['name'] = item_name_re.search(gpt_response).group(1) if item_name_re.search(gpt_response) else None
+        details['quantity'] = int(item_quantity_re.search(gpt_response).group(1)) if item_quantity_re.search(gpt_response) else None
+        details['last_purchased'] = item_date_re.search(gpt_response).group(1) if item_date_re.search(gpt_response) else None
+        
+    elif "remove" in gpt_response.lower() or "delete" in gpt_response.lower():
+        action = 'delete'
+        details['name'] = item_name_re.search(gpt_response).group(1) if item_name_re.search(gpt_response) else None
+    
+    return action, details
 
