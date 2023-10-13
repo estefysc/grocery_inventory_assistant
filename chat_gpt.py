@@ -9,15 +9,55 @@ api_key = os.environ.get("OPENAI_API_KEY")
 # Initialize the OpenAI API client
 openai.api_key = api_key
 
-def create_chat_completion(prompt, model="gpt-4", conversation_history=None, temperature=1, max_tokens=100):
-    conversation_state = session.get('conversation_state')
-    messages = []
+def create_chat_greeting(prompt, model="gpt-4", conversation_history=None, temperature=1, max_tokens=100):
+    # Retrieve individual fields from the session
+    # stage = session.get('stage', 'greeting')
+    # user_intent = session.get('user_intent')
+    # item_to_update = session.get('item_to_update')
+    # quantity = session.get('quantity')
+    # consumption_rate = session.get('consumption_rate')
     
-    if conversation_state:
-        context = conversation_state.get_context()
-        messages.append({"role": "system", "content": "You are a helpful assistant specialized in managing grocery inventories."})
-        messages.append({"role": "user", "content": context})
-        messages.append({"role": "assistant", "content": prompt})
+    # print('Session state:', stage, user_intent, item_to_update, quantity, consumption_rate)
+
+    # Initial greeting will depend on whether the user has already started a conversation
+    # check database to see if user has started a conversation
+    # if yes, then use the following prompt
+    content_message = "You are a helpful assistant specialized in managing grocery inventories. Respond as if you were greeting the user for the first time. "
+    
+    messages = [
+        {
+            "role": "system", 
+            "content": "You are a helpful assistant specialized in managing grocery inventories. Respond as if you were greeting the user for the first time. "
+        
+        }
+    ]
+    
+    response = openai.ChatCompletion.create(
+        model=model,
+        messages=messages,
+        max_tokens=max_tokens,
+        n=1,
+        stop=None,
+        temperature=temperature
+    )
+    
+    generated_text = response['choices'][0]['message']['content'].strip()
+    return generated_text
+
+def create_chat_completion(prompt, model="gpt-4", conversation_history=None, temperature=1, max_tokens=100):
+    # Retrieve individual fields from the session
+    stage = session.get('stage', 'greeting')
+    user_intent = session.get('user_intent')
+    item_to_update = session.get('item_to_update')
+    quantity = session.get('quantity')
+    consumption_rate = session.get('consumption_rate')
+    
+    print('Session state:', stage, user_intent, item_to_update, quantity, consumption_rate)
+    
+    messages = [
+        {"role": "system", "content": "You are a helpful assistant specialized in managing grocery inventories."},
+        {"role": "user", "content": prompt}  # Using prompt directly as it represents user's input
+    ]
     
     response = openai.ChatCompletion.create(
         model=model,
@@ -78,7 +118,7 @@ def parse_gpt_response(gpt_response):
     item_date_re = re.compile(r'last purchased: (\d{4}-\d{2}-\d{2})', re.IGNORECASE)
     
     # Logic to parse GPT's response and decide the CRUD operation
-    if "add" in gpt_response.lower() or "create" in gpt_response.lower():
+    if "added" in gpt_response.lower() or "create" in gpt_response.lower():
         action = 'create'
         details['name'] = item_name_re.search(gpt_response).group(1) if item_name_re.search(gpt_response) else None
         details['quantity'] = int(item_quantity_re.search(gpt_response).group(1)) if item_quantity_re.search(gpt_response) else None
