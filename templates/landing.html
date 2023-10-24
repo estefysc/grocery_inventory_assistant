@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Landing Page</title>
+    <style>
+        body {
+            background-image: url('{{ url_for('static', filename='landing.png') }}');
+            background-size: cover;
+            background-position: center;
+            height: 100vh;
+            margin: 0;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        h1 {
+            font-size: 4em;
+        }
+    </style>
+</head>
+<div style="text-align: center;">
+    <body>
+        <h1 style="color:#f6f6e2;">Welcome to Your Inventory Assistant</h1>
+        <!-- <form action="/process_pin" method="post" >
+            <label for="pin" style="display: block;">(Regular HTML) Enter PIN:</label>
+            <input type="text" id="pin" name="pin">
+            <input type="submit" value="Submit">
+        </form> -->
+        <form action="/process_pin" method="post">
+            {{ form.hidden_tag() }}
+            {{ form.pin.label }} {{ form.pin() }}<br>
+            {{ form.submit() }}
+        </form>
+        <form action="/create_pin" method="post" >
+            <label for="newPin" style="display: block;">If you are a new user:</label>
+            <input type="submit" value="Create pin" />
+        </form>
+    </body>
+</div>
+</html>
+
