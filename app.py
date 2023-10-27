@@ -3,12 +3,13 @@ from flask import Flask, request, render_template, redirect, url_for, flash, ses
 from flask_migrate import Migrate
 from dotenv import load_dotenv
 from data import inventory
-from database import db, create_pin, insert_pin_into_table, checkIfFirstTimeUser
+from database import db, create_pin, insert_pin_into_table, allowSignIn
 # from inventory_management import add_item, update_quantity, update_item, remove_item, calculate_consumption_rate
 from inventory_management import add_item_to_inventory, get_item_details, update_item_details, delete_item_from_inventory
 from chat_gpt import create_chat_completion, parse_user_intent, parse_gpt_response
 from conversation_state import ConversationState
 from forms import PinForm
+from models import UserState
 import os
 
 load_dotenv()  # Load environment variables from .env file
@@ -36,38 +37,23 @@ def landing():
     form = PinForm()
     return render_template('landing.html', form=form)
 
-# @app.route('/', methods=['GET'])
-# def home():
-#     # Initialize ConversationState object
-#     conversation_state = ConversationState()
-    
-#     # Store its fields in the session
-#     session['stage'] = conversation_state.stage
-#     session['user_intent'] = conversation_state.user_intent
-#     session['item_to_update'] = conversation_state.item_to_update
-#     session['quantity'] = conversation_state.quantity
-#     session['consumption_rate'] = conversation_state.consumption_rate
-#     session['chatgpt_response'] = None
-
-#     return redirect('/natural_input')
-
 @app.route('/process_pin', methods=['POST'])
 def process_pin():
     form = PinForm()
     if form.validate_on_submit():
         pin = form.pin.data
-        firstTimeUser = checkIfFirstTimeUser(pin)
+        allowSignIn(pin, UserState)
 
-        if firstTimeUser:
-            # Start conversation by asking for initial inventory?
-            return redirect('/natural_input')
+        # if firstTimeUser:
+        #     # Start conversation by asking for initial inventory?
+        #     return redirect('/natural_input')
         #else:
             # Start conversation in a diferent way?
             #return redirect( ??? )
 
-        print(pin)
-        # What is this doing?
-        flash('Form submitted successfully.')
+        # print(pin)
+        # # What is this doing?
+        # flash('Form submitted successfully.')
         return redirect('/')
 
 
@@ -75,7 +61,7 @@ def process_pin():
 def obtain_pin():
     if request.method == 'POST':
         pin = create_pin()
-        insert_pin_into_table(pin)
+        insert_pin_into_table(pin, UserState)
         return redirect('/')
 
 @app.route('/handle_input', methods=['POST'])

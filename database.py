@@ -2,6 +2,8 @@ from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.exc import SQLAlchemyError
 from random import randint
 
+# Note: Dependency injection is done in some of the functions to prevent the circular import error
+
 db = SQLAlchemy()
 
 def create_pin():
@@ -9,10 +11,7 @@ def create_pin():
     print('Generated PIN: ' + str(pin))
     return pin
 
-def insert_pin_into_table(pin):
-    # Import is happening here to prevent "circular imports" error
-    from models import UserState
-
+def insert_pin_into_table(pin, UserState):
     # Create a new UserState object with the given PIN
     new_user_state = UserState(id=pin, first_time_user=True)
 
@@ -27,8 +26,29 @@ def insert_pin_into_table(pin):
         
     print('Successfully inserted new user state into table')
 
-def checkIfFirstTimeUser(pin):++++
+def allowSignIn(pin, UserState):
     # Check if the pin is in the database
-    # If if is, check if this is a first time user
+    validPin = __checkIfPinExists(pin, UserState)
+    
+    if validPin:
+        __checkIfFirstTimeUser(pin, UserState)
+        # if first time user, take them to one page
+        # if not first time user, take them to another page
+    else:
+        # do not allow sign in
+        print('Invalid PIN')
+
+def __checkIfPinExists(pin, UserState):
+    pinExists = db.session.query(UserState.query.filter_by(id=pin).exists()).scalar()
+    print('Does the pin exist? ' + str(pinExists))
+    return pinExists
+
+def __checkIfFirstTimeUser(pin, UserState):
+    # Query the UserState table for the specific PIN
+    user_state = UserState.query.filter_by(id=pin).first()
+    isFirstTimeUser = user_state.first_time_user
+    print(isFirstTimeUser)
+    return isFirstTimeUser
+    
 
 
