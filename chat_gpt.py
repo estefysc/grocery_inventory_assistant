@@ -9,7 +9,7 @@ api_key = os.environ.get("OPENAI_API_KEY")
 # Initialize the OpenAI API client
 openai.api_key = api_key
 
-def create_chat_greeting(prompt, model="gpt-4", conversation_history=None, temperature=1, max_tokens=100):
+def createFirstTimeUserChatGreeting(model="gpt-4", conversation_history=None, temperature=1, max_tokens=100):
     # Retrieve individual fields from the session
     # stage = session.get('stage', 'greeting')
     # user_intent = session.get('user_intent')
@@ -22,13 +22,16 @@ def create_chat_greeting(prompt, model="gpt-4", conversation_history=None, tempe
     # Initial greeting will depend on whether the user has already started a conversation
     # check database to see if user has started a conversation
     # if yes, then use the following prompt
-    content_message = "You are a helpful assistant specialized in managing grocery inventories. Respond as if you were greeting the user for the first time. "
+    # content_message = "You are a helpful assistant specialized in managing grocery inventories. Respond as if you were greeting the user for the first time. "
     
     messages = [
         {
             "role": "system", 
             "content": "You are a helpful assistant specialized in managing grocery inventories. Respond as if you were greeting the user for the first time. "
-        
+        },
+        {   
+            "role": "user", 
+            "content": "Greet me as this is the first time you are talking to me. You need to fnd out my consumption rate. "
         }
     ]
     
@@ -42,6 +45,7 @@ def create_chat_greeting(prompt, model="gpt-4", conversation_history=None, tempe
     )
     
     generated_text = response['choices'][0]['message']['content'].strip()
+    print('Generated text:', generated_text)
     return generated_text
 
 def create_chat_completion(prompt, model="gpt-4", conversation_history=None, temperature=1, max_tokens=100):

@@ -3,10 +3,10 @@ from flask import Flask, request, render_template, redirect, url_for, flash, ses
 from flask_migrate import Migrate
 from dotenv import load_dotenv
 from data import inventory
-from database import db, create_pin, insert_pin_into_table, allowSignIn
+from database import db, create_pin, insert_pin_into_table, getPage
 # from inventory_management import add_item, update_quantity, update_item, remove_item, calculate_consumption_rate
 from inventory_management import add_item_to_inventory, get_item_details, update_item_details, delete_item_from_inventory
-from chat_gpt import create_chat_completion, parse_user_intent, parse_gpt_response
+from chat_gpt import create_chat_completion, parse_user_intent, parse_gpt_response, createFirstTimeUserChatGreeting
 from conversation_state import ConversationState
 from forms import PinForm
 from models import UserState
@@ -22,6 +22,7 @@ def create_app():
     # Setup database URI from the environment variables
     app.config['SQLALCHEMY_DATABASE_URI'] = f"postgresql://{os.getenv('POSTGRES_USER')}:{os.getenv('POSTGRES_PASSWORD')}@{os.getenv('POSTGRES_HOST')}:{os.getenv('POSTGRES_PORT')}/{os.getenv('POSTGRES_DB')}"
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False  # Silence the deprecation warning
+    # app.config['DEBUG'] = True
     db.init_app(app)
 
     # Import models
@@ -42,27 +43,15 @@ def process_pin():
     form = PinForm()
     if form.validate_on_submit():
         pin = form.pin.data
-        allowSignIn(pin, UserState)
-
-        # if firstTimeUser:
-        #     # Start conversation by asking for initial inventory?
-        #     return redirect('/natural_input')
-        #else:
-            # Start conversation in a diferent way?
-            #return redirect( ??? )
-
-        # print(pin)
-        # # What is this doing?
-        # flash('Form submitted successfully.')
-        return redirect('/')
-
+        page = getPage(pin, UserState)
+    return redirect(page)
 
 @app.route('/create_pin', methods=['POST'])
 def obtain_pin():
     if request.method == 'POST':
         pin = create_pin()
         insert_pin_into_table(pin, UserState)
-        return redirect('/')
+    return redirect('/')
 
 @app.route('/handle_input', methods=['POST'])
 def handle_input():
@@ -77,18 +66,18 @@ def handle_input():
         
     return render_template('handle_input.html', gpt_response=response)
 
-@app.route('/natural_input', methods=['GET', 'POST'])
-def natural_input():
-    if request.method == 'POST':
-        user_input = request.form['user_input']
-        # Here, we'll call the ChatGPT function to interpret the user_input.
-        # Then, we'll process the ChatGPT response to update the inventory.
-        # Finally, we'll display the outcome to the user.
-        # This part will be implemented in the next steps.
-        return redirect('/natural_input')
-    return render_template('natural_input.html')
+# @app.route('/natural_input', methods=['GET', 'POST'])
+# def natural_input():
+#     if request.method == 'POST':
+#         user_input = request.form['user_input']
+#         # Here, we'll call the ChatGPT function to interpret the user_input.
+#         # Then, we'll process the ChatGPT response to update the inventory.
+#         # Finally, we'll display the outcome to the user.
+#         # This part will be implemented in the next steps.
+#         return redirect('/natural_input')
+#     return render_template('natural_input.html')
 
-@app.route('/process_natural_input', methods=['GET', 'POST'])
+@app.route('/natural_input', methods=['GET', 'POST'])
 def process_natural_input():
     if request.method == 'POST':
         user_input = request.form.get('user_input')
@@ -122,16 +111,22 @@ def process_natural_input():
         #     flash(f"GPT Response: {chat_gpt_response}")
             
         # return redirect(url_for('natural_input'))
-        
     return render_template('natural_input.html')
 
-
-
-
+@app.route('/first_time_user', methods=['GET', 'POST'])
+def process_first_time_user():
+    if request.method == 'GET':
+        # user_input = request.form.get('user_input')
+        # print(f"User Input: {user_input}")
+        chat_gpt_response = createFirstTimeUserChatGreeting()
+        print(f"GPT Response: {chat_gpt_response}")
+        session['chatgpt_response'] = chat_gpt_response
+    return render_template('first_time_user.html')
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    # app = create_app()
+    app.run()
 
 
 
