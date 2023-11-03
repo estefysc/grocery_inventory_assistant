@@ -6,7 +6,7 @@ from data import inventory
 from database import db, create_pin, insert_pin_into_table, getPage
 # from inventory_management import add_item, update_quantity, update_item, remove_item, calculate_consumption_rate
 from inventory_management import add_item_to_inventory, get_item_details, update_item_details, delete_item_from_inventory
-from chat_gpt import create_chat_completion, parse_user_intent, parse_gpt_response, createFirstTimeUserChatGreeting
+from chat_gpt import create_chat_completion, parse_user_intent, parse_gpt_response, createFirstTimeUserChatGreeting, gatherInformation
 from conversation_state import ConversationState
 from forms import PinForm
 from models import UserState
@@ -116,11 +116,17 @@ def process_natural_input():
 @app.route('/first_time_user', methods=['GET', 'POST'])
 def process_first_time_user():
     if request.method == 'GET':
+        print('GET request')
         # user_input = request.form.get('user_input')
         # print(f"User Input: {user_input}")
         chat_gpt_response = createFirstTimeUserChatGreeting()
-        print(f"GPT Response: {chat_gpt_response}")
         session['chatgpt_response'] = chat_gpt_response
+    if request.method == 'POST':
+        print('POST request')
+        user_input = request.form.get('user_input')
+        chat_gpt_response = gatherInformation(user_input)
+        session['chatgpt_response'] = chat_gpt_response
+        
     return render_template('first_time_user.html')
 
 

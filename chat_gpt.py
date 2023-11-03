@@ -9,7 +9,10 @@ api_key = os.environ.get("OPENAI_API_KEY")
 # Initialize the OpenAI API client
 openai.api_key = api_key
 
-def createFirstTimeUserChatGreeting(model="gpt-4", conversation_history=None, temperature=1, max_tokens=100):
+GPT_MODEL = "gpt-4"
+MAX_TOKENS = 100
+
+def createFirstTimeUserChatGreeting(model=GPT_MODEL, conversation_history=None, temperature=1, max_tokens=MAX_TOKENS):
     # Retrieve individual fields from the session
     # stage = session.get('stage', 'greeting')
     # user_intent = session.get('user_intent')
@@ -31,7 +34,7 @@ def createFirstTimeUserChatGreeting(model="gpt-4", conversation_history=None, te
         },
         {   
             "role": "user", 
-            "content": "Greet me as this is the first time you are talking to me. You need to fnd out my consumption rate. "
+            "content": "Greet me as this is the first time you are talking to me. You need to fnd out my consumption rate for all the items that I consume. You will calculate my consumption rates automatically. Ask me for an item, how many I bought and then how many I have left after a week."
         }
     ]
     
@@ -45,10 +48,25 @@ def createFirstTimeUserChatGreeting(model="gpt-4", conversation_history=None, te
     )
     
     generated_text = response['choices'][0]['message']['content'].strip()
-    print('Generated text:', generated_text)
     return generated_text
 
-def create_chat_completion(prompt, model="gpt-4", conversation_history=None, temperature=1, max_tokens=100):
+def gatherInformation(prompt, model=GPT_MODEL, conversation_history=None, temperature=1, max_tokens=MAX_TOKENS):
+    messages = [
+        {"role": "system", "content": "You are a helpful assistant specialized in managing grocery inventories. These are the first interactions with a new user. You asked for the items that the user consumes, the initial amount bought and what is left after a week. You need to isolate the name of the product, the initial amount, and the amount that is left after after a week in the user's response."},
+        {"role": "user", "content": prompt}  # Using prompt directly as it represents user's input
+    ]
+    response = openai.ChatCompletion.create(
+        model=model,
+        messages=messages,
+        max_tokens=max_tokens,
+        n=1,
+        stop=None,
+        temperature=temperature
+    )
+    generated_text = response['choices'][0]['message']['content'].strip()
+    return generated_text
+
+def create_chat_completion(prompt, model=GPT_MODEL, conversation_history=None, temperature=1, max_tokens=MAX_TOKENS):
     # Retrieve individual fields from the session
     stage = session.get('stage', 'greeting')
     user_intent = session.get('user_intent')
