@@ -121,6 +121,8 @@ def process_first_time_user():
         # print(f"User Input: {user_input}")
         chat_gpt_response = createFirstTimeUserChatGreeting()
         session['chatgpt_response'] = chat_gpt_response
+        
+        
     if request.method == 'POST':
         print('POST request')
         user_input = request.form.get('user_input')

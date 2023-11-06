@@ -1,4 +1,5 @@
 from flask import session
+from database import get_database_info
 import openai
 import os
 import re
@@ -11,6 +12,36 @@ openai.api_key = api_key
 
 GPT_MODEL = "gpt-4"
 MAX_TOKENS = 100
+
+database_schema_dict = get_database_info()
+database_schema_string = "\n".join(
+    [
+        f"Table: {table['table_name']}\nColumns: {', '.join(table['column_names'])}"
+        for table in database_schema_dict
+    ]
+)
+
+functions = [
+    {
+        "name": "ask_database",
+        "description": "Use this function to answer user questions about products and consumption rates. Input should be a fully formed SQL query.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "query": {
+                    "type": "string",
+                    "description": f"""
+                            SQL query extracting info to answer the user's question.
+                            SQL should be written using this database schema:
+                            {database_schema_string}
+                            The query should be returned in plain text, not in JSON.
+                            """,
+                }
+            },
+            "required": ["query"],
+        },
+    }
+]
 
 def createFirstTimeUserChatGreeting(model=GPT_MODEL, conversation_history=None, temperature=1, max_tokens=MAX_TOKENS):
     # Retrieve individual fields from the session
