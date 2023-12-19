@@ -1,5 +1,7 @@
 from flask import session
-from database import get_database_info
+from database import Database
+from openai import OpenAI
+
 import openai
 import os
 import re
@@ -9,39 +11,46 @@ api_key = os.environ.get("OPENAI_API_KEY")
 
 # Initialize the OpenAI API client
 openai.api_key = api_key
+#client = openai.Client()
+client = OpenAI()
 
 GPT_MODEL = "gpt-4"
 MAX_TOKENS = 100
 
-database_schema_dict = get_database_info()
-database_schema_string = "\n".join(
-    [
-        f"Table: {table['table_name']}\nColumns: {', '.join(table['column_names'])}"
-        for table in database_schema_dict
-    ]
-)
+# if the below code will be used, it needs to be placed within a function so it is not called when the file is imported. 
+# This is because the database is not yet created when the file is imported, so the code will fail.
 
-functions = [
-    {
-        "name": "ask_database",
-        "description": "Use this function to answer user questions about products and consumption rates. Input should be a fully formed SQL query.",
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "query": {
-                    "type": "string",
-                    "description": f"""
-                            SQL query extracting info to answer the user's question.
-                            SQL should be written using this database schema:
-                            {database_schema_string}
-                            The query should be returned in plain text, not in JSON.
-                            """,
-                }
-            },
-            "required": ["query"],
-        },
-    }
-]
+# db = Database()
+
+# database_schema_dict = db.get_database_info()
+# database_schema_string = "\n".join(
+#     [
+#         f"Table: {table['table_name']}\nColumns: {', '.join(table['column_names'])}"
+#         for table in database_schema_dict
+#     ]
+# )
+
+# functions = [
+#     {
+#         "name": "ask_database",
+#         "description": "Use this function to answer user questions about products and consumption rates. Input should be a fully formed SQL query.",
+#         "parameters": {
+#             "type": "object",
+#             "properties": {
+#                 "query": {
+#                     "type": "string",
+#                     "description": f"""
+#                             SQL query extracting info to answer the user's question.
+#                             SQL should be written using this database schema:
+#                             {database_schema_string}
+#                             The query should be returned in plain text, not in JSON.
+#                             """,
+#                 }
+#             },
+#             "required": ["query"],
+#         },
+#     }
+# ]
 
 def createFirstTimeUserChatGreeting(model=GPT_MODEL, conversation_history=None, temperature=1, max_tokens=MAX_TOKENS):
     # Retrieve individual fields from the session
@@ -65,28 +74,32 @@ def createFirstTimeUserChatGreeting(model=GPT_MODEL, conversation_history=None, 
         },
         {   
             "role": "user", 
-            "content": "Greet me as this is the first time you are talking to me. You need to fnd out my consumption rate for all the items that I consume. You will calculate my consumption rates automatically. Ask me for an item, how many I bought and then how many I have left after a week."
+            "content": "Greet me as this is the first time you are talking to me. You need to find out my consumption rate for all the items that I consume. You will calculate my consumption rates automatically. Ask me for an item, how many I bought and then how many I have left after a week. Limit your response to a maximum of 100 words."
         }
     ]
     
-    response = openai.ChatCompletion.create(
-        model=model,
-        messages=messages,
-        max_tokens=max_tokens,
-        n=1,
-        stop=None,
-        temperature=temperature
-    )
-    
-    generated_text = response['choices'][0]['message']['content'].strip()
-    return generated_text
+    try:
+        response = client.chat.completions.create(
+            model=model,
+            messages=messages,
+            max_tokens=max_tokens,
+            n=1,
+            stop=None,
+            temperature=temperature
+        )
+        
+        generated_text = response.choices[0].message.content
+        return generated_text
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        return "An error occurred. Please try again."
 
 def gatherInformation(prompt, model=GPT_MODEL, conversation_history=None, temperature=1, max_tokens=MAX_TOKENS):
     messages = [
         {"role": "system", "content": "You are a helpful assistant specialized in managing grocery inventories. These are the first interactions with a new user. You asked for the items that the user consumes, the initial amount bought and what is left after a week. You need to isolate the name of the product, the initial amount, and the amount that is left after after a week in the user's response."},
         {"role": "user", "content": prompt}  # Using prompt directly as it represents user's input
     ]
-    response = openai.ChatCompletion.create(
+    response = client.chat.completions.create(
         model=model,
         messages=messages,
         max_tokens=max_tokens,
@@ -94,7 +107,7 @@ def gatherInformation(prompt, model=GPT_MODEL, conversation_history=None, temper
         stop=None,
         temperature=temperature
     )
-    generated_text = response['choices'][0]['message']['content'].strip()
+    generated_text = response.choices[0].message.content
     return generated_text
 
 def create_chat_completion(prompt, model=GPT_MODEL, conversation_history=None, temperature=1, max_tokens=MAX_TOKENS):
@@ -112,7 +125,7 @@ def create_chat_completion(prompt, model=GPT_MODEL, conversation_history=None, t
         {"role": "user", "content": prompt}  # Using prompt directly as it represents user's input
     ]
     
-    response = openai.ChatCompletion.create(
+    response = client.chat.completions.create(
         model=model,
         messages=messages,
         max_tokens=max_tokens,
@@ -121,7 +134,7 @@ def create_chat_completion(prompt, model=GPT_MODEL, conversation_history=None, t
         temperature=temperature
     )
     
-    generated_text = response['choices'][0]['message']['content'].strip()
+    generated_text = response.choices[0].message.content
     return generated_text
 
 def parse_user_intent(user_input):

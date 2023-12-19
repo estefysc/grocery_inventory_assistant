@@ -1,5 +1,7 @@
-from database import db
 from models import InventoryItem
+from database import Database
+
+db = Database()
 
 def add_item_to_inventory(item_name, quantity, last_purchased, consumption_rate=None):
     new_item = InventoryItem(
