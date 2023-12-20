@@ -1,5 +1,6 @@
 from flask import Blueprint, request, render_template, redirect, url_for, flash, session
-from assistant_functionality import Assistant 
+from assistants.inventoryAssistant import InventoryAssistant
+from assistants.supervisor import InventoryAssistantSupervisor
 
 # Create a Blueprint
 main = Blueprint('main', __name__)
@@ -97,22 +98,33 @@ def process_natural_input():
 
 @main.route('/first_time_user', methods=['GET', 'POST'])
 def process_first_time_user():
-    assistant = Assistant("Grocery Inventory Assistant")
-    assistantId = None
-    thread = None
+    # Note: When you deal with HTTP requests in a web application, each request is independent. 
+    # This means when a user first visits your page, a GET request is initiated, and the variables assistantId and thread are set within the scope of that request. 
+    # However, once the response is sent back to the user, that instance of the function (along with its variables) essentially ceases to exist.
+    # Later, when the user submits a form, triggering a POST request, a new instance of the process_first_time_user function is called. 
+    # This new instance has its own set of variables. So, the assistantId and thread variables are re-initialized to None, and they don't retain the values they had during the GET request.
+    
+    # TODO: The assistants need to be instantiated somewhere else, other wise, they keep being instantiated every time the user submits a form.
+    assistant = InventoryAssistant("Grocery Inventory Assistant")
+    supervisor = InventoryAssistantSupervisor("Grocery Inventory Assistant Supervisor")
 
     if request.method == 'GET':
         # chat_gpt_response = createFirstTimeUserChatGreeting()
         # session['chatgpt_response'] = chat_gpt_response
 
-        assistantId, thread, session['chatgpt_response'] = assistant.startFirstTimeUserInteraction()
+        assistantId, threadId, chatgptResponse = assistant.startFirstTimeUserInteraction()
+        session['chatgpt_response'] = chatgptResponse
+        session['assistantId'] = assistantId
+        session['thread'] = threadId
         
     if request.method == 'POST':
         user_input = request.form.get('user_input')
         # chat_gpt_response = gatherInformation(user_input)
         # session['chatgpt_response'] = chat_gpt_response
+        chatgptResponse = assistant.processFirstTimeUserInput(user_input, session['assistantId'], session['thread'])
+        supervisorResponse = supervisor.analizeResponse(chatgptResponse)
+        session['chatgpt_response'] = chatgptResponse
+        session['chatgpt_supervisor_response'] = supervisorResponse
 
-        session['chatgpt_response'] = assistant.processFirstTimeUserInput(user_input, assistantId, thread)
 
-        
     return render_template('first_time_user.html')

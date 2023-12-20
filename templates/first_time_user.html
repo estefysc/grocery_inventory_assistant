@@ -22,6 +22,10 @@
         <h3>ChatGPT's Response:</h3>
         <p>{{ session['chatgpt_response'] }}</p>
     </div>
+    <div class="supervisor-response-box">
+        <h3>Supervisor's Response:</h3>
+        <p>{{ session['chatgpt_supervisor_response'] }}</p>
+    </div>
     <form action="/first_time_user" method="post">
         <label for="user_input">Your Input:</label>
         <input type="text" id="user_input" name="user_input"><br><br>
