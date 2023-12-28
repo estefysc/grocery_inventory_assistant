@@ -1,8 +1,10 @@
-from flask import Flask
+from flask import Flask, session
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from dotenv import load_dotenv
 from databaseConnection import DatabaseConnection
+from assistants.inventoryAssistant import InventoryAssistant
+from assistants.supervisor import Supervisor
 import os
 
 load_dotenv()  # Load environment variables from .env file
@@ -30,7 +32,22 @@ def create_app():
     from routes import main as main_blueprint
     app.register_blueprint(main_blueprint)
 
+    # @app.before_request
+    # def before_request():
+    #     print("Before request")
+    #     if 'assistants' not in session:
+    #         session['assistants'] = create_user_assistants()
+
     return app
+
+# def create_user_assistants():
+#     # Function to create assistants
+#     # Replace with actual creation logic for InventoryAssistant and Supervisor
+    
+#     return {
+#         'inventory_assistant': InventoryAssistant("Grocery Inventory Assistant"),
+#         'supervisor': Supervisor("Grocery Inventory Assistant Supervisor")
+#     }
 
 if __name__ == "__main__":
     app = create_app()

@@ -1,6 +1,6 @@
 from assistants.baseAssistant import BaseAssistant
 
-class InventoryAssistantSupervisor(BaseAssistant):
+class Supervisor(BaseAssistant):
     def __init__(self, name, model="gpt-4-1106-preview"):
         super().__init__(name, model)  # Call to the base class constructor
         instruction = "You play the role of another LLM agent supervisor. The other agent is an inventory assistant. You will be recieving the agent's responses, and you will have to analyze the context of the responses in order to decide which action to take."

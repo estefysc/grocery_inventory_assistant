@@ -1,6 +1,7 @@
 import openai
 import os
 import time
+import requests
 
 from abc import ABC, abstractmethod
 from openai import OpenAI
@@ -24,6 +25,7 @@ class BaseAssistant(ABC):
             tools = self.tools,
             model = self.model
         )
+    
         return assistant
 
     def _createThread(self, userMessage):
@@ -67,20 +69,57 @@ class BaseAssistant(ABC):
         )
         response = messages.data[0].content[0].text.value
         return response
+    
+    def _listAssistants(self):
+        assistant_object = client.beta.assistants.list()
+        #print("Assistant Object: ", assistant_object)
+        return assistant_object
+    
+    def _deleteAssistant(self, assistant_id):
+        """Delete an assistant by ID."""
+        HEADERS = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {api_key}",  # Replace with your actual API key
+            "OpenAI-Beta": "assistants=v1"
+        }
+        delete_url = f"https://api.openai.com/v1/assistants/{assistant_id}"
+        response = requests.delete(delete_url, headers=HEADERS)
+        print("Response: ", response)
+        if response.status_code == 200:
+            print(f"Deleted assistant with ID: {assistant_id}")
+        else:
+            print(f"Failed to delete assistant with ID: {assistant_id}. Status Code: {response.status_code}")
 
-    # def startFirstTimeUserInteraction(self):
-    #     instruction = "You are a helpful assistant specialized in managing grocery inventories. If you interact with a user for the first time, You need to find out the consumption rate for all the items that the user consumes. You will calculate the consumption rates automatically. Ask for an item, how many were bought and then how many are left after a week. If this is not a first time user, then you will retrieve the consumption rate from the database. Ask if anything needs to be updated and generate a projected buying plan that minimizes waste."
-    #     assistant = self.__createAssistant(instruction)
-    #     userMessage = "Greet me as this is the first time you are talking to me. You need to find out my consumption rate for all the items that I consume. You will calculate my consumption rates automatically. Ask me for an item, how many I bought and then how many I have left after a week."
-    #     threadId = self.__createThread(userMessage)
-    #     run = self.__triggerAssistant(threadId, assistant.id)
-    #     self.__waitForRun(threadId, run)
-    #     response = self.__getAssistantResponse(threadId)
-    #     return assistant.id, threadId, response
+    def deleteAllAssistants(self):
+        """Delete all assistants."""
+        assistantsList = self._listAssistants()
+        assitantsListData = assistantsList.data
+        print("Assistants List length: ", len(assitantsListData))
+        for i in range(len(assitantsListData)):
+            self._deleteAssistant(assitantsListData[i].id)
+        list = self._listAssistants()
+        print("List of assistants after deletion: ", list)
 
-    # def processFirstTimeUserInput(self, userInput, assistantId, threadId):
-    #     modifiedThread = self.__modifyThread(threadId, userInput)
-    #     run = self.__triggerAssistant(modifiedThread, assistantId)
-    #     self.__waitForRun(modifiedThread, run)
-    #     response = self.__getAssistantResponse(modifiedThread)
-    #     return response
+    # def select_assistant(assistant_id):
+    #     # Use the 'beta.assistants' attribute, not 'Assistant'
+    #     assistant = client.beta.assistants.retrieve(assistant_id)
+    #     return assistant.id
+
+    # def create_assistant(name, instructions, tools, model):
+    #     assistant = client.beta.assistants.create(
+    #         name=name,
+    #         instructions=instructions,
+    #         tools=tools,
+    #         model=model
+    #     )
+    #     return assistant.id  # Return the assistant ID
+
+    # def get_assistant_by_id(assistant_id):
+    #     assistant = client.beta.assistants.retrieve(assistant_id)
+    #     return assistant.id
+
+
+    # def select_assistant(assistant_id):
+    #     return get_assistant_by_id(assistant_id)
+
+  
