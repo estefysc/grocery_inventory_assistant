@@ -17,6 +17,7 @@ class BaseAssistant(ABC):
         self.tools = [{"type": "code_interpreter"}]
 
     def _createAssistant(self, instruction):
+        print("Creating assistant")
         assistant = client.beta.assistants.create(
             # name="Grocery Inventory Assistant",
             name = self.name,
@@ -25,8 +26,7 @@ class BaseAssistant(ABC):
             tools = self.tools,
             model = self.model
         )
-    
-        return assistant
+        return assistant.id
 
     def _createThread(self, userMessage):
         thread = client.beta.threads.create()
@@ -72,7 +72,6 @@ class BaseAssistant(ABC):
     
     def _listAssistants(self):
         assistant_object = client.beta.assistants.list()
-        #print("Assistant Object: ", assistant_object)
         return assistant_object
     
     def _deleteAssistant(self, assistant_id):
@@ -100,10 +99,9 @@ class BaseAssistant(ABC):
         list = self._listAssistants()
         print("List of assistants after deletion: ", list)
 
-    # def select_assistant(assistant_id):
-    #     # Use the 'beta.assistants' attribute, not 'Assistant'
-    #     assistant = client.beta.assistants.retrieve(assistant_id)
-    #     return assistant.id
+    def getListOfAssistants(self):
+        list = self._listAssistants()
+        print("Assistant list: ", list)
 
     # def create_assistant(name, instructions, tools, model):
     #     assistant = client.beta.assistants.create(
@@ -114,12 +112,8 @@ class BaseAssistant(ABC):
     #     )
     #     return assistant.id  # Return the assistant ID
 
-    # def get_assistant_by_id(assistant_id):
-    #     assistant = client.beta.assistants.retrieve(assistant_id)
-    #     return assistant.id
-
-
-    # def select_assistant(assistant_id):
-    #     return get_assistant_by_id(assistant_id)
+    def selectAssistant(assistant_id):
+        assistant = client.beta.assistants.retrieve(assistant_id)
+        return assistant.id
 
   

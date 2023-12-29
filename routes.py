@@ -16,6 +16,9 @@ db = Database()
 # Define routes using the Blueprint
 @main.route('/', methods=['GET'])
 def landing():
+    if 'assistants' not in session:
+        print("Assistants not in session. Creating object..")
+        session['assistants'] = {}
     form = PinForm()
     return render_template('landing.html', form=form)
 
@@ -103,15 +106,18 @@ def process_first_time_user():
     # This new instance has its own set of variables. So, the assistantId and thread variables are re-initialized to None, and they don't retain the values they had during the GET request.
     
     print("process_first_time_user")
+    
     # TODO: The assistants need to be instantiated somewhere else, other wise, they keep being instantiated every time the user submits a form.
     assistant = InventoryAssistant("Grocery Inventory Assistant")
     supervisor = Supervisor("Grocery Inventory Assistant Supervisor")
-    assistant.deleteAllAssistants()
     # Retrieve assistants from the session
     # assistants = session.get('assistants')
     # if assistants:
     #     assistant = assistants['inventory_assistant']
     #     supervisor = assistants['supervisor']
+
+   
+        
 
     if request.method == 'GET':
         print("GET request - process_first_time_user")
@@ -119,7 +125,7 @@ def process_first_time_user():
         # session['chatgpt_response'] = chat_gpt_response
         
         # assistantId, threadId, chatgptResponse = assistant.startFirstTimeUserInteraction()
-        
+        # assistant.getListOfAssistants()
         # session['chatgpt_response'] = chatgptResponse
         # session['assistantId'] = assistantId
         # session['thread'] = threadId
@@ -133,6 +139,5 @@ def process_first_time_user():
         supervisorResponse = supervisor.analizeResponse(chatgptResponse)
         session['chatgpt_response'] = chatgptResponse
         session['chatgpt_supervisor_response'] = supervisorResponse
-
 
     return render_template('first_time_user.html')

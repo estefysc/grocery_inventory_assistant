@@ -1,6 +1,7 @@
 from sqlalchemy.exc import SQLAlchemyError
 from random import randint
 from databaseConnection import DatabaseConnection
+from flask import session
 
 class Database:
     def __init__(self):
@@ -32,6 +33,8 @@ class Database:
         pinExists = self.__checkIfPinExists(pin, UserState)
         if pinExists:
             print('Valid PIN')
+            # TODO: for now, the pin will be used as user ID
+            self.__addUserIdToSession(pin)
             # Check if the user is a first time user
             isFirstTimeUser = self.__checkIfFirstTimeUser(pin, UserState)
             # TODO: Change the first_time_user column to False is not working. Also, this change needs to be done once the user
@@ -93,6 +96,14 @@ class Database:
             column_names.append(column.name)
 
         return column_names
+    
+    def __addUserIdToSession(self, userId):
+        if 'assistants' in session:
+            if userId not in session['assistants']:
+                print("Adding user to session")
+                session['assistants'][userId] = {}
+            else:
+                print("User already in session")
 
     def get_database_info(self):
         """Return a list of dicts containing the table name and columns for each table in the database."""
