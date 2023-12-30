@@ -19,6 +19,8 @@ def landing():
     if 'assistants' not in session:
         print("Assistants not in session. Creating object..")
         session['assistants'] = {}
+    else:
+        print("Assistants already in session.")
     form = PinForm()
     return render_template('landing.html', form=form)
 
@@ -106,18 +108,19 @@ def process_first_time_user():
     # This new instance has its own set of variables. So, the assistantId and thread variables are re-initialized to None, and they don't retain the values they had during the GET request.
     
     print("process_first_time_user")
-    
+    print("This is the current session: ", session)
     # TODO: The assistants need to be instantiated somewhere else, other wise, they keep being instantiated every time the user submits a form.
     assistant = InventoryAssistant("Grocery Inventory Assistant")
     supervisor = Supervisor("Grocery Inventory Assistant Supervisor")
+
+    print("(Development) Deleting all assistants..")
+    assistant.deleteAllAssistants()
     # Retrieve assistants from the session
     # assistants = session.get('assistants')
     # if assistants:
     #     assistant = assistants['inventory_assistant']
     #     supervisor = assistants['supervisor']
 
-   
-        
 
     if request.method == 'GET':
         print("GET request - process_first_time_user")

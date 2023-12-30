@@ -102,6 +102,7 @@ class Database:
             if userId not in session['assistants']:
                 print("Adding user to session")
                 session['assistants'][userId] = {}
+                session.modified = True
             else:
                 print("User already in session")
 
