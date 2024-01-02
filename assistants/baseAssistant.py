@@ -17,7 +17,7 @@ class BaseAssistant(ABC):
         self.tools = [{"type": "code_interpreter"}]
 
     def _createAssistant(self, instruction):
-        print("Creating assistant")
+        print("Creating assistant from BaseAssistant._createAssistant")
         assistant = client.beta.assistants.create(
             # name="Grocery Inventory Assistant",
             name = self.name,

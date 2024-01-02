@@ -16,11 +16,6 @@ db = Database()
 # Define routes using the Blueprint
 @main.route('/', methods=['GET'])
 def landing():
-    if 'assistants' not in session:
-        print("Assistants not in session. Creating object..")
-        session['assistants'] = {}
-    else:
-        print("Assistants already in session.")
     form = PinForm()
     return render_template('landing.html', form=form)
 
@@ -108,39 +103,48 @@ def process_first_time_user():
     # This new instance has its own set of variables. So, the assistantId and thread variables are re-initialized to None, and they don't retain the values they had during the GET request.
     
     print("process_first_time_user")
-    print("This is the current session: ", session)
-    # TODO: The assistants need to be instantiated somewhere else, other wise, they keep being instantiated every time the user submits a form.
-    assistant = InventoryAssistant("Grocery Inventory Assistant")
-    supervisor = Supervisor("Grocery Inventory Assistant Supervisor")
 
-    print("(Development) Deleting all assistants..")
-    assistant.deleteAllAssistants()
-    # Retrieve assistants from the session
-    # assistants = session.get('assistants')
-    # if assistants:
-    #     assistant = assistants['inventory_assistant']
-    #     supervisor = assistants['supervisor']
+    userId = session['userId']
+    # check if there is an assistant for this user
+    assistanId, supervisorId = db.checkIfAgentsInSession(userId)
+    threadId = db.getThreadIdFromSession(userId)
+    
+    if assistanId is None:
+        print("No assistant found for this user.")
+        assistant = InventoryAssistant("Grocery Inventory Assistant")
+    else:
+        print("Assistant found for this user.")
 
-
+    if supervisorId is None:
+        print("No supervisor found for this user.")
+        supervisor = Supervisor("Grocery Inventory Supervisor")
+    else:
+        print("Supervisor found for this user.")
+    
     if request.method == 'GET':
         print("GET request - process_first_time_user")
+
+        # print("(Development) Deleting all assistants..")
+        # assistant.deleteAllAssistants()
+
         # chat_gpt_response = createFirstTimeUserChatGreeting()
         # session['chatgpt_response'] = chat_gpt_response
         
-        # assistantId, threadId, chatgptResponse = assistant.startFirstTimeUserInteraction()
-        # assistant.getListOfAssistants()
-        # session['chatgpt_response'] = chatgptResponse
-        # session['assistantId'] = assistantId
-        # session['thread'] = threadId
+        chatgptResponse = assistant.startFirstTimeUserInteraction(userId, db)
+        session['chatgpt_response'] = chatgptResponse
         
     if request.method == 'POST':
         print("POST request - process_first_time_user")
         user_input = request.form.get('user_input')
         # chat_gpt_response = gatherInformation(user_input)
         # session['chatgpt_response'] = chat_gpt_response
-        chatgptResponse = assistant.processFirstTimeUserInput(user_input, session['assistantId'], session['thread'])
-        supervisorResponse = supervisor.analizeResponse(chatgptResponse)
+
+        print("This is the session: ", session)
+        print("This is the threadId: ", threadId)
+
+        chatgptResponse = assistant.processFirstTimeUserInput(user_input, assistanId, threadId)
+        # supervisorResponse = supervisor.analizeResponse(chatgptResponse)
         session['chatgpt_response'] = chatgptResponse
-        session['chatgpt_supervisor_response'] = supervisorResponse
+        # session['chatgpt_supervisor_response'] = supervisorResponse
 
     return render_template('first_time_user.html')
