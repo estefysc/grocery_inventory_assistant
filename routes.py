@@ -111,15 +111,16 @@ def process_first_time_user():
     
     if assistanId is None:
         print("No assistant found for this user.")
-        assistant = InventoryAssistant("Grocery Inventory Assistant")
     else:
         print("Assistant found for this user.")
 
     if supervisorId is None:
         print("No supervisor found for this user.")
-        supervisor = Supervisor("Grocery Inventory Supervisor")
     else:
         print("Supervisor found for this user.")
+
+    assistant = InventoryAssistant("Grocery Inventory Assistant")
+    supervisor = Supervisor("Grocery Inventory Supervisor")
     
     if request.method == 'GET':
         print("GET request - process_first_time_user")
@@ -132,6 +133,7 @@ def process_first_time_user():
         
         chatgptResponse = assistant.startFirstTimeUserInteraction(userId, db)
         session['chatgpt_response'] = chatgptResponse
+        assistant.getListOfAssistants()
         
     if request.method == 'POST':
         print("POST request - process_first_time_user")
@@ -146,5 +148,7 @@ def process_first_time_user():
         # supervisorResponse = supervisor.analizeResponse(chatgptResponse)
         session['chatgpt_response'] = chatgptResponse
         # session['chatgpt_supervisor_response'] = supervisorResponse
+
+        assistant.getListOfAssistants()
 
     return render_template('first_time_user.html')

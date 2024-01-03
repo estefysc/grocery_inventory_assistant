@@ -59,20 +59,23 @@ class Database:
     
     def getThreadIdFromSession(self, userId):
         threadId = None
-        if 'originalThread' in session and userId in session['originalThread']:
-            threadId = session['originalThread'][userId]
+        if 'originalAssistantThread' in session and userId in session['originalAssistantThread']:
+            threadId = session['originalAssistantThread'][userId]
         return threadId
     
     def __createSessionObjects(self, userId):
         self.__createAgentsSessionObjects()
         self.__checkUserIdInSession(userId)
-        self.__createThreadSessionObject()
+        self.__createThreadSessionObjects()
 
     def addAssistantIdToSession(self, userId, assistantId):
         session['assistants'][userId] = assistantId
 
-    def addOriginalThreadIdToSession(self, userId, threadId):
-        session['originalThread'][userId] = threadId
+    def addOriginalAssistantThreadIdToSession(self, userId, threadId):
+        session['originalAssistantThread'][userId] = threadId
+
+    def addOriginalSupervisorThreadIdToSession(self, userId, threadId):
+        session['originalSupervisorThread'][userId] = threadId
 
     def get_database_info(self):
         """Return a list of dicts containing the table name and columns for each table in the database."""
@@ -97,12 +100,18 @@ class Database:
         else:
             print("Supervisors already in session.")
 
-    def __createThreadSessionObject(self):
-        if 'originalThread' not in session:
-            print("originalThread not in session. Creating object..")
-            session['originalThread'] = {}
+    def __createThreadSessionObjects(self):
+        if 'originalAssistantThread' not in session:
+            print("originalAssistantThread not in session. Creating object..")
+            session['originalAssistantThread'] = {}
         else:
-            print("originalThread already in session.")
+            print("originalAssistantThread already in session.")
+
+        if 'originalSupervisorThread' not in session:
+            print("originalSupervisorThread not in session. Creating object..")
+            session['originalSupervisorThread'] = {}
+        else:
+            print("originalSupervisorThread already in session.")
     
     def __checkIfAssistantExistsInSession(self, userId):
         assistantId = None

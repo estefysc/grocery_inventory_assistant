@@ -8,7 +8,7 @@ class InventoryAssistant(BaseAssistant):
         # print(f"Assistant from InventoryAssistant in json: {assistant}")
         userMessage = "Greet me as this is the first time you are talking to me. You need to find out my consumption rate for all the items that I consume. You will calculate my consumption rates automatically. Ask me for an item, how many I bought and then how many I have left after a week."
         threadId = self._createThread(userMessage)
-        db.addOriginalThreadIdToSession(userId, threadId)
+        db.addOriginalAssistantThreadIdToSession(userId, threadId)
         run = self._triggerAssistant(threadId, assistantId)
         self._waitForRun(threadId, run)
         response = self._getAssistantResponse(threadId)
