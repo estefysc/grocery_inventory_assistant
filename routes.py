@@ -105,19 +105,14 @@ def process_first_time_user():
     print("process_first_time_user")
 
     userId = session['userId']
-    # check if there is an assistant for this user
     assistanId, supervisorId = db.checkIfAgentsInSession(userId)
-    threadId = db.getThreadIdFromSession(userId)
+    assistantThreadId = db.getAssistantThreadIdFromSession(userId)
+    supervisorThreadId = db.getSupervisorThreadIdFromSession(userId)
     
     if assistanId is None:
         print("No assistant found for this user.")
     else:
         print("Assistant found for this user.")
-
-    if supervisorId is None:
-        print("No supervisor found for this user.")
-    else:
-        print("Supervisor found for this user.")
 
     assistant = InventoryAssistant("Grocery Inventory Assistant")
     supervisor = Supervisor("Grocery Inventory Supervisor")
@@ -128,27 +123,30 @@ def process_first_time_user():
         # print("(Development) Deleting all assistants..")
         # assistant.deleteAllAssistants()
 
+        # Old API
         # chat_gpt_response = createFirstTimeUserChatGreeting()
         # session['chatgpt_response'] = chat_gpt_response
         
-        chatgptResponse = assistant.startFirstTimeUserInteraction(userId, db)
-        session['chatgpt_response'] = chatgptResponse
-        assistant.getListOfAssistants()
+        assistantResponse = assistant.startFirstTimeUserInteraction(userId, db)
+        session['chatgpt_response'] = assistantResponse
         
     if request.method == 'POST':
         print("POST request - process_first_time_user")
         user_input = request.form.get('user_input')
+
+        # Old API
         # chat_gpt_response = gatherInformation(user_input)
         # session['chatgpt_response'] = chat_gpt_response
 
-        print("This is the session: ", session)
-        print("This is the threadId: ", threadId)
+        assistantResponse = assistant.processFirstTimeUserInput(user_input, assistanId, assistantThreadId)
+        session['chatgpt_response'] = assistantResponse
 
-        chatgptResponse = assistant.processFirstTimeUserInput(user_input, assistanId, threadId)
-        # supervisorResponse = supervisor.analizeResponse(chatgptResponse)
-        session['chatgpt_response'] = chatgptResponse
-        # session['chatgpt_supervisor_response'] = supervisorResponse
-
-        assistant.getListOfAssistants()
+        if supervisorId is None:
+            print("No supervisor found for this user.")
+            supervisor.startInteraction(userId, db)
+        else:
+            print("Supervisor found for this user.")
+            supervisorResponse = supervisor.analizeResponse(assistantResponse, supervisorId, supervisorThreadId)
+            session['chatgpt_supervisor_response'] = supervisorResponse
 
     return render_template('first_time_user.html')

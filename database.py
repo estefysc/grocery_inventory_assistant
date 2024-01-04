@@ -57,10 +57,16 @@ class Database:
         supervisorId = self.__checkIfSupervisorExistsInSession(userId)
         return assistantId, supervisorId
     
-    def getThreadIdFromSession(self, userId):
+    def getAssistantThreadIdFromSession(self, userId):
         threadId = None
         if 'originalAssistantThread' in session and userId in session['originalAssistantThread']:
             threadId = session['originalAssistantThread'][userId]
+        return threadId
+    
+    def getSupervisorThreadIdFromSession(self, userId):
+        threadId = None
+        if 'originalSupervisorThread' in session and userId in session['originalSupervisorThread']:
+            threadId = session['originalSupervisorThread'][userId]
         return threadId
     
     def __createSessionObjects(self, userId):
@@ -70,6 +76,9 @@ class Database:
 
     def addAssistantIdToSession(self, userId, assistantId):
         session['assistants'][userId] = assistantId
+
+    def addSupervisorIdToSession(self, userId, supervisorId):
+        session['supervisors'][userId] = supervisorId
 
     def addOriginalAssistantThreadIdToSession(self, userId, threadId):
         session['originalAssistantThread'][userId] = threadId
