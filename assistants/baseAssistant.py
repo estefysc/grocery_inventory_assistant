@@ -12,6 +12,7 @@ client = OpenAI()
 
 class BaseAssistant(ABC):
     def __init__(self, name, model="gpt-4-1106-preview"):
+    # def __init__(self, name, model="gpt-4"):
         self.name = name
         self.model = model
         self.tools = [{"type": "code_interpreter"}]
@@ -55,6 +56,8 @@ class BaseAssistant(ABC):
 
     def _waitForRun(self, threadId, run):
         while run.status == "queued" or run.status == "in_progress":
+            print("Waiting for run to complete..")
+            # print(run)
             run = client.beta.threads.runs.retrieve(
             thread_id = threadId,
             run_id = run.id

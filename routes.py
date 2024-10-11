@@ -91,7 +91,7 @@ def process_natural_input():
         #     # No specific CRUD operation, maybe a query or other command
         #     flash(f"GPT Response: {chat_gpt_response}")
             
-        # return redirect(url_for('natural_input'))
+        return redirect('/natural_input')
     return render_template('natural_input.html')
 
 @main.route('/first_time_user', methods=['GET', 'POST'])
@@ -109,6 +109,7 @@ def process_first_time_user():
     assistantThreadId = db.getAssistantThreadIdFromSession(userId)
     supervisorThreadId = db.getSupervisorThreadIdFromSession(userId)
     
+    # This block is for testing purposes only
     if assistanId is None:
         print("No assistant found for this user.")
     else:
@@ -120,8 +121,8 @@ def process_first_time_user():
     if request.method == 'GET':
         print("GET request - process_first_time_user")
 
-        # print("(Development) Deleting all assistants..")
-        # assistant.deleteAllAssistants()
+        print("(Development) Deleting all assistants..")
+        assistant.deleteAllAssistants()
 
         # Old API
         # chat_gpt_response = createFirstTimeUserChatGreeting()
@@ -146,7 +147,12 @@ def process_first_time_user():
             supervisor.startInteraction(userId, db)
         else:
             print("Supervisor found for this user.")
-            supervisorResponse = supervisor.analizeResponse(assistantResponse, supervisorId, supervisorThreadId)
-            session['chatgpt_supervisor_response'] = supervisorResponse
+            # for subsequent responses, the original threadId is used. Is this correct?
+            # supervisorResponsetoAssistant = supervisor.analizeResponse(assistantResponse, supervisorId, supervisorThreadId)
+            # session['chatgpt_supervisor_response'] = supervisorResponsetoAssistant
+            supervisorResponsetoUser = supervisor.analizeResponse(user_input, supervisorId, supervisorThreadId)
+            session['chatgpt_supervisor_response'] = supervisorResponsetoUser
+            # print(f"Supervisor response to user: {supervisorResponsetoUser}")
+
 
     return render_template('first_time_user.html')

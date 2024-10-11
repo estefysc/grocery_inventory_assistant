@@ -2,7 +2,7 @@ from assistants.baseAssistant import BaseAssistant
 
 class InventoryAssistant(BaseAssistant):
     def startFirstTimeUserInteraction(self, userId, db):
-        instruction = "You are a helpful assistant specialized in managing grocery inventories. If you interact with a user for the first time, You need to find out the consumption rate for all the items that the user consumes. You will calculate the consumption rates automatically. Ask for an item, how many were bought and then how many are left after a week. If this is not a first time user, then you will retrieve the consumption rate from the database. Ask if anything needs to be updated and generate a projected buying plan that minimizes waste."
+        instruction = "You are a helpful assistant specialized in managing grocery inventories. If you interact with a user for the first time, You need to find out the consumption rate for all the items that the user consumes. You will calculate the consumption rates automatically. Ask for an item, how many were bought and then how many are left after a week. Always give the user the option to continue to provide items or to generate a buying plan. Respond to the user accordingly."
         assistantId = self._createAssistant(instruction)
         db.addAssistantIdToSession(userId, assistantId)
         # print(f"Assistant from InventoryAssistant in json: {assistant}")
@@ -10,8 +10,10 @@ class InventoryAssistant(BaseAssistant):
         threadId = self._createThread(userMessage)
         db.addOriginalAssistantThreadIdToSession(userId, threadId)
         run = self._triggerAssistant(threadId, assistantId)
-        self._waitForRun(threadId, run)
+        completed_run = self._waitForRun(threadId, run)
+        # print(f"Completed run: {completed_run}")
         response = self._getAssistantResponse(threadId)
+        
         return response
 
     def processFirstTimeUserInput(self, userInput, assistantId, threadId):
